@@ -1,28 +1,56 @@
 import sys
 import json
-from crawl4ai import WebCrawler
+import asyncio
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
+from crawl4ai.extraction_strategy import LLMExtractionStrategy
 
-if len(sys.argv) < 2:
-    print(json.dumps({"error": "Usage: python analyze.py <html_file>"}))
-    sys.exit(1)
+async def main(file_path: str):
+    try:
+        # Đọc HTML từ file tạm
+        with open(file_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
 
-html_file = sys.argv[1]
+        # Config cho browser (chạy headless Chromium)
+        browser_config = BrowserConfig(
+            browser_type="chromium",
+            headless=True,
+        )
 
-with open(html_file, "r", encoding="utf8") as f:
-    html = f.read()
+        # Config cho crawler
+        run_config = CrawlerRunConfig(
+            extraction_strategy=LLMExtractionStrategy(
+                provider="openai/gpt-4o-mini",  # hoặc "ollama/llama3" nếu bạn cài local
+                schema={
+                    "name": "VideoPageMetadata",
+                    "description": "Extract metadata from video course page",
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "description": {"type": "string"},
+                        "videos": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        },
+                    },
+                },
+                extraction_type="json",
+                max_tokens=500,
+            ),
+            cache_mode=CacheMode.BYPASS,
+        )
 
-crawler = WebCrawler()
-doc = crawler.load_html(html)
+        # Chạy crawler với HTML tạm
+        async with AsyncWebCrawler(config=browser_config) as crawler:
+            result = await crawler.arun(html=html_content, config=run_config)
 
-# Query AI
-video_links = doc.query("Extract all video or streaming URLs (mp4, m3u8, mpd) from this HTML page")
-title = doc.query("Extract the title of this page")
-description = doc.query("Extract a short description of this page")
+        # In kết quả JSON để Node.js parse
+        print(json.dumps(result.extracted_content, ensure_ascii=False))
 
-result = {
-    "title": title,
-    "description": description,
-    "videos": video_links,
-}
+    except Exception as e:
+        print(json.dumps({"error": str(e)}))
 
-print(json.dumps(result, ensure_ascii=False))
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(json.dumps({"error": "Missing file path"}))
+    else:
+        asyncio.run(main(sys.argv[1]))
