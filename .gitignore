@@ -1,4 +1,27 @@
-node_modules
-venv
-result.*
-downloads
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+*.egg-info/
+
+# Project specific
+data/downloads/*
+data/logs/*
+data/sessions/*
+data/cache/*
+.env
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
