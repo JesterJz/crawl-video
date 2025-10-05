@@ -2,9 +2,10 @@
   "name": "crawl-video",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "crawler.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start-chrome": "node start-chrome-debug.js",
+    "crawl": "node crawler.js"
   },
   "keywords": [],
   "author": "",
